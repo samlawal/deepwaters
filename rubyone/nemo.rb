@@ -3,7 +3,8 @@ require "selenium-webdriver"
 require "pry"
 require "rspec"
 require "open-uri"
-require "http"
+
+# require "http"
 # require 'openssl'
 # require 'nokogiri'
 
@@ -41,13 +42,121 @@ options.add_argument("start-maximized")
 
 options.add_preference(:download, prefs)
 
+
 #@driver = Selenium::WebDriver.for :chrome
 @driver = Selenium::WebDriver.for :chrome, options: options
 
 @driver.manage.delete_all_cookies # seconds
-@driver.manage.timeouts.implicit_wait = 30 # seconds
-@wait = Selenium::WebDriver::Wait.new(:timeout => 5) # seconds
+@driver.manage.timeouts.page_load = 10 # seconds
+@driver.manage.timeouts.implicit_wait = 10 # seconds
 
+@wait = Selenium::WebDriver::Wait.new(:timeout => 2) # seconds
+@user_exists = false
+
+def wait_for_element(tag, element) #timeout = 2
+  wait = Selenium::WebDriver::Wait.new(:timeout => 3) # seconds
+  begin
+    # wait.until { @driver.find_element(tag,  element)
+    wait.until { driver.find_element(tag, element).displayed? }
+    wait.until { driver.find_element(tag, element).enabled? }
+
+  rescue
+    puts"Waited out for 30 sec #{tag} #{element}"
+  end
+end
+def download_url
+  get_url = @driver.current_url
+  #get_url_parse = URI.parse(get_url).open(:ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE).read
+  #download = open(get_url_parse,  :http_basic_authentication => ['Damien.fortune@autorama.co.uk', 'Autorama1'] )
+  #doc = Nokogiri::HTML(open(url, :http_basic_authentication => ['Damien.fortune@autorama.co.uk', 'Autorama1'] ))
+  download = open(get_url)
+  # IO.copy_stream(download, "~/testdata/my_file.pdf")
+  IO.copy_stream(download, "~/my_file.pdf")
+end
+
+def wait_for_window(timeout = 2)
+  #sleep(round(timeout / 1000))
+  sleep(timeout / 1000)
+  wh_now = @driver.window_handles
+  wh_then = @vars["window_handles"]
+  wh_now.find { |window| window != wh_then.first }
+rescue StandardError => e
+  puts "Rescued: #{e.inspect}"
+end
+
+def wait_for_element_by_id(driver, element) #timeout = 2
+  wait = Selenium::WebDriver::Wait.new(:timeout => 30) # seconds
+  begin
+    wait.until { driver.find_element(:id, element) }
+  ensure
+    #driver.quit
+  end
+end
+
+def wait_for_element_by_link(driver, element) #timeout = 2
+  wait = Selenium::WebDriver::Wait.new(:timeout => 1) # seconds
+  wait.until { driver.find_element(:link_text, element) }
+rescue StandardError => e
+  puts "Rescued: #{e.inspect}"
+end
+
+def wait_for_element_to_be_enabled_by_link(driver, element) #timeout = 2
+  wait = Selenium::WebDriver::Wait.new(:timeout => 30) # seconds
+  begin
+    wait.until { driver.find_element(:link_text, element).displayed? }
+    wait.until { driver.find_element(:link_text, element).enabled? }
+  ensure
+    #driver.quit
+  end
+end
+
+def wait_until_element_appears(driver, locator, name)
+  wait = Selenium::WebDriver::Wait.new(:timeout => 30) # seconds
+  wait.until { driver.find_element(locator, name).displayed? }
+rescue
+#driver.quit
+end
+
+def wait_until_element_appears_by_id(driver, element) #timeout = 2
+  wait = Selenium::WebDriver::Wait.new(:timeout => 10) # seconds
+  begin
+    wait.until { driver.find_element(:id => element).displayed? }
+    wait.until { driver.find_element(:id => element).enabled? }
+  ensure
+    #driver.quit
+  end
+end
+
+def is_element_enabled(driver, locator, element) #timeout = 2
+  wait = Selenium::WebDriver::Wait.new(:timeout => 20) #
+  begin
+    #element = wait.until { driver.find_element(:id => element).enabled? }
+    wait.until { driver.find_element(locator, element).enabled? }
+  ensure
+    #driver.quit
+  end
+end
+
+def wait_until_disappears(locator, name)
+  wait = Selenium::WebDriver::Wait.new(:timeout => 15) # seconds
+  wait.until { !@driver.find_element(locator, name).displayed? }
+rescue
+  puts"Could not find #{locator} #{name}"
+end
+
+def wait_until_disabled(locator, name)
+  wait = Selenium::WebDriver::Wait.new(:timeout => 15) # seconds
+  wait.until { !@driver.find_element(locator, name).enabled? }
+rescue
+  puts"Could not find #{locator} #{name}"
+end
+
+def wait_until_element_is_enabled(driver, type, name)
+  wait = Selenium::WebDriver::Wait.new(:timeout => 15) # seconds
+  wait.until { driver.find_element(type => name).enabled? }
+rescue
+  puts"Could not find #{locator} #{name}"
+end
 def download_url
   get_url = @driver.current_url
   #get_url_parse = URI.parse(get_url).open(:ssl_verify_mode => OpenSSL::SSL::VERIFY_NONE).read
@@ -75,7 +184,7 @@ end
 def wait_for_element_by_id(driver, element) #timeout = 2
   wait = Selenium::WebDriver::Wait.new(:timeout => 30) # seconds
   begin
-    wait.until { driver.find_element(:id => element) }
+    wait.until { driver.find_element(:id, element) }
   ensure
     #driver.quit
   end
@@ -83,7 +192,7 @@ end
 
 def wait_for_element_by_link(driver, element) #timeout = 2
   wait = Selenium::WebDriver::Wait.new(:timeout => 1) # seconds
-  wait.until { driver.find_element(:link_text => element) }
+  wait.until { driver.find_element(:link_text, element) }
 rescue StandardError => e
   puts "Rescued: #{e.inspect}"
 end
@@ -91,16 +200,18 @@ end
 def wait_for_element_to_be_enabled_by_link(driver, element) #timeout = 2
   wait = Selenium::WebDriver::Wait.new(:timeout => 30) # seconds
   begin
-    wait.until { driver.find_element(:link_text => element).displayed? }
-    wait.until { driver.find_element(:link_text => element).enabled? }
+    wait.until { driver.find_element(:link_text, element).displayed? }
+    wait.until { driver.find_element(:link_text, element).enabled? }
   ensure
     #driver.quit
   end
 end
 
-def wait_until_element_appears(driver, locator, name)
+def wait_until_element_appears(locator, name)
   wait = Selenium::WebDriver::Wait.new(:timeout => 30) # seconds
-  wait.until { driver.find_element(locator, name).displayed? }
+  wait.until { @driver.find_element(locator, name).displayed? }
+rescue
+  puts"element did not appear #{locator} #{name}"
 end
 
 def wait_until_element_appears_by_id(driver, element) #timeout = 2
@@ -123,14 +234,18 @@ def is_element_enabled(driver, locator, element) #timeout = 2
   end
 end
 
-def wait_until_disappears(long_press_on_coordinates_with_duration, name)
+def wait_til_element_disappears(locator, name)
   wait = Selenium::WebDriver::Wait.new(:timeout => 5) # seconds
   wait.until { !@driver.find_element(locator, name).displayed? }
+rescue
+  puts"Could not find #{locator} #{name}"
 end
 
-def wait_until_element_is_enabled(driver, type, name)
+def wait_til_element_is_enabled(type, name)
   wait = Selenium::WebDriver::Wait.new(:timeout => 5) # seconds
-  wait.until { driver.find_element(type => name).enabled? }
+  wait.until { @driver.find_element(type => name).enabled? }
+rescue
+  puts"Could not find #{locator} #{name}"
 end
 
 @driver.get("https://brokers.leaseplan.co.uk/login.asp?")
@@ -167,11 +282,31 @@ def switch_to_window_with_text(target)
 end
 
 def page_has_loaded(browser)
-  wait = Selenium::WebDriver::Wait.new(:timeout => 30) # seconds
-  page_state = browser.execute_script(
-    "return document.readyState;"
-  )
-  wait.until { return page_state == "complete" }
+  wait = Selenium::WebDriver::Wait.new(:timeout => 7) # seconds
+  # page_state = browser.execute_script('return document.readyState;')
+  # ajax_state = browser.execute_script('return jQuery.active == 0')
+
+  # spin_state = browser.execute_script("return $('.spinner').is(':visible') == false")
+
+
+  wait.until {
+    #  return page_state == "complete"
+    return (browser.execute_script('return document.readyState;') && browser.execute_script('return jQuery.active == 0')) #   && spin_state)
+  }
+  puts"page_has_loaded #{return}"
+
+end
+# def wait_for_page_load(browser)
+#       old_page = browser.find_elements(:tag_name => 'html')
+#       new_page = browser.find_elements(:tag_name => 'html')
+#       wait.until{
+#         return new_page.id != self.old_page.id
+#       }
+# end
+###########################
+
+def page_ajax_has_finished(browser)
+  @wait.until { browser.execute_script("return jQuery.active == 0")}
 end
 
 #Rotate through selection to see if any match
@@ -188,12 +323,12 @@ def quote_select(driver, contractTypeValue)
   x = 1
   y = 5
   z = 0
- 
+
 
   while x <= y
 
   xpath = "//*[@id='IdPage:j_id1:j_id195:IdPage:IdForm:IdQuotesBoxSectionOnly']/div/div[1]/div[#{x}]/div/div/a/span"
-  xpath_rel_cont = "//*[@id='IdPage:j_id1:j_id195:IdPage:IdForm:IdQuotesBoxSectionOnly']/div/div[7]/div[#{x}]/div/div[1]" 
+  xpath_rel_cont = "//*[@id='IdPage:j_id1:j_id195:IdPage:IdForm:IdQuotesBoxSectionOnly']/div/div[7]/div[#{x}]/div/div[1]"
   xpath_rel_quote = "//*[@id='IdPage:j_id1:j_id195:IdPage:IdForm:IdQuotesBoxSectionOnly']/div/div[1]/div[#{x}]/div/div/a/span"
   xpath_rel_sel = "//*[@id='dPage:j_id1:j_id195:IdPage:IdForm:Idquoßesbox8:#{z}:j_id499']"
   xpath_rel_sel_1 = "//*[@id='dPage:j_id1:j_id195:IdPage:IdForm:Idquoßesbox8:#{z}:j_id499']"
@@ -204,8 +339,10 @@ def quote_select(driver, contractTypeValue)
   ###########
   
     print x, ". Ruby while loop.\n"
+   # wait_for_window($take_five)
     wait_for_window($take_five)
-    wait_for_window($take_five)
+    is_element_present(:xpath, xpath_rel_cont)
+    link_has_gone_stale(:xpath, xpath_rel_cont)
     contractType = driver.find_element(:xpath, xpath_rel_cont).text
     puts "got contractType value of #{contractType}"
 
@@ -230,7 +367,7 @@ def quote_select(driver, contractTypeValue)
     x += 1
     z += 1
   end
- 
+
     puts "bool_contract_found #{$bool_contract_found}"
 
       if $bool_contract_found == false
@@ -238,7 +375,7 @@ def quote_select(driver, contractTypeValue)
       puts "Couldn't find #{contractType}. Please go the next 5 options : bool_contract_found #{$bool_contract_found}"
 
       wait_for_window($take_five)
-      wait_for_window($take_five)
+     # wait_for_window($take_five)
       driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:j_id864:IdNextPreviousAllNEXT").click
       wait_for_window($take_five)
       end
@@ -249,7 +386,6 @@ def quote_select(driver, contractTypeValue)
 
 end
 
-#@driver.find_element(:xpath  => "//div[@class='ap-loginmask-button ap-login-action']//button[@class='ap-button']").click
 
 
 def accept_cookies(driver)
@@ -267,15 +403,45 @@ def switch_handles()
   @vars["root"] = @driver.window_handle
   @driver.switch_to.window(@vars["win7761"])
 end
+def is_element_present(how, what)
+  result = @driver.find_elements(how, what).size() > 0
+  if result
+      result = @driver.find_element(how, what).displayed? && @driver.find_element(how, what).enabled?
+     puts "Results displayed #{result} : #{how} : #{what} "
+  end
+  @driver.manage.timeouts.implicit_wait = 4
+    return result
+end
 
+def link_has_gone_stale(how, what)
+  begin
+      # poll the link with an arbitrary call
+      @driver.find_element(how, what)
+      return false
+      puts "Active Element Found"
+  rescue
+      return true
+      puts "StaleElementReferenceError encountered"
+  end
+end
 def wait_and_click(tag, prop)
   # wait_for_ajax
+  link_has_gone_stale(tag, prop)
   element = @wait.until{
       tmp_element = @driver.find_element(tag, prop)
-      tmp_element if tmp_element.enabled? && tmp_element.displayed?
+      if tmp_element.enabled? && tmp_element.displayed?
+        puts " Inside Wait and Click #{prop} "
+
+         is_disabled = !tmp_element.attribute("disabled")
+
+          if is_disabled
+            puts " Should be clickable#{prop} "
+          element = tmp_element
+          end
+      end
     }
   element.click
-rescue StandardError => e
+  rescue => e
   puts "Couldn't click on element:  #{e.inspect} "
 end
 
@@ -292,32 +458,48 @@ accept_cookies(@driver)
 @driver.switch_to.window(@vars["win7761"])
 wait_for_window($take_five)
 @driver.execute_script("window.scrollTo(0,213.3333282470703)")
-wait_for_window($take_five)
-wait_until_element_appears_by_id(@driver, "j_id0:idform:j_id3:j_id103")
-wait_for_window($take_five)
-@driver.find_element(:id, "j_id0:idform:j_id3:j_id103").click
-wait_for_window($take_five)
-wait_for_window($take_five)
-@driver.find_element(:link_text, "ACCEPT").click
-wait_for_window($take_five)
-wait_for_window($take_five)
-@driver.find_element(:link_text, "ACCEPT").click
-page_has_loaded(@driver)
-wait_for_window($take_five)
-@driver.find_element(:link_text, "ACCEPT").click
-page_has_loaded(@driver)
-wait_for_window($take_five)
+# wait_for_window($take_five)
+# wait_until_element_appears_by_id(@driver, "j_id0:idform:j_id3:j_id103")
+# wait_for_window($take_five)
+if is_element_present(:id, "j_id0:idform:j_id3:j_id103")
+  @driver.find_element(:id, "j_id0:idform:j_id3:j_id103").click
+end
+# wait_for_window($take_five)
+# @driver.find_element(:link_text, "ACCEPT").click
+# wait_for_window($take_five)
+# wait_for_window($take_five)
+# wait_and_click(:link_text, "ACCEPT")
+# wait_for_window($take_five)
+wait_til_element_is_enabled(:link_text, "ACCEPT")
+@driver.execute_script('markQuestionAgree(0)')
+@driver.execute_script('markQuestionAgree(1)')
+@driver.execute_script('markQuestionAgree(2)')
+# wait_and_click(:link_text, "ACCEPT")
+# binding.pry
+# wait_and_click(:link_text, "ACCEPT")
+#wait_for_window($take_five)
+
+# @driver.find_element(:link_text, "ACCEPT").click
+# page_has_loaded(@driver)
+# wait_for_window($take_five)
+# @driver.find_element(:link_text, "ACCEPT").click
+# page_has_loaded(@driver)
+# wait_for_window($take_five)
 @driver.find_element(:link_text, "SELECT").click
 page_has_loaded(@driver)
 wait_for_window($take_five)
 
-# Customer details
+# Customer details - NEW PAGE
+
 wait_for_window($take_five)
 wait_until_element_appears_by_id(@driver, "j_id0:form:j_id5:Idfirstname")
 @driver.find_element(:id, "j_id0:form:j_id5:Idfirstname").click
 @driver.find_element(:id, "j_id0:form:j_id5:Idfirstname").send_keys("Liam")
 @driver.find_element(:name, "j_id0:form:j_id5:j_id314").click
-@driver.find_element(:name, "j_id0:form:j_id5:j_id314").send_keys("Meehan")
+@driver.find_element(:name, "j_id0:form:j_id5:j_id314").send_keys("Meehan7")
+
+# @driver.find_element(:name, "j_id0:form:j_id5:j_id314").send_keys("Meehan6")
+# @driver.find_element(:name, "j_id0:form:j_id5:j_id314").send_keys("Meehan5")
 @driver.find_element(:id, "j_id0:form:j_id5:idDay").click
 @driver.find_element(:id, "j_id0:form:j_id5:idDay").send_keys("17")
 @driver.find_element(:id, "j_id0:form:j_id5:idMonth").click
@@ -348,30 +530,155 @@ element = @driver.find_element(:css, ".button")
 element = @driver.find_element(:css, ".button")
 @driver.action.move_to(element).release.perform
 wait_for_window($take_five)
-@driver.find_element(:css, ".button").click
+
+wait_and_click(:css, ".button")
+#@driver.find_element(:css, ".button").click
 @driver.execute_script("window.scrollTo(0,1248)")
-page_has_loaded(@driver)
 wait_for_window($take_five)
-# binding.pry
-wait_and_click(:css, ".walkme-custom-balloon-title")
+
+#####
+
+#New functionality
+
+ if is_element_present(:css, '#j_id0\:form\:j_id5\:j_id421 > a')
+    @user_exists = false
+    wait_and_click(:css, '#j_id0\:form\:j_id5\:j_id421 > a')
+ else
+    @user_exists = true
+ end
+# @driver.find_element(:css, '#j_id0\:form\:j_id5\:j_id421 > a').click
+# @driver.execute_script("validatedata(event);")
+
+
+#####
+# wait_and_click(:css, ".walkme-custom-balloon-title")
 # @driver.find_element(:css, ".walkme-custom-balloon-title").click
 # @driver.find_element(:css, ".walkme-custom-balloon-button-text").click
 wait_and_click(:css, ".walkme-custom-balloon-button-text")
-wait_and_click(:id, "idPageConsumer:idForm:j_id13:checkbox1").click
 
 
-#signatory direct debit
-wait_for_window($take_five)
-# @driver.find_element(:id, "idPageConsumer:idForm:j_id13:checkbox1").click
 
-switch_handles()
-wait_for_window($take_five)
+# switch_handles()
+# wait_for_window($take_five)
 #@driver.switch_to.default_content
 #@driver.find_element(:css, '#idPageConsumer\:idForm\:j_id13\:j_id461\:j_id462\:j_id465\:0\:j_id473 > button').click
 
 #############################
 
 ########
+# CUSTOMER DETAILS > Customer Identity
+
+
+#  Click on the TITLE
+@driver.find_element(:css, '.button:nth-child(2)').click
+@driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id279SelectBoxItText').click
+# element = @driver.find_element(:css, '#idPageConsumer\:idForm\:j_id13\:j_id279SelectBoxItContainer > div')
+@driver.find_element(:xpath, "//a[@class='selectboxit-option-anchor' and text()='Prof']").click
+
+
+#  Click on RESIDENTIAL STATUS
+element = @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id310SelectBoxItText')
+element.click
+@driver.find_element(:xpath, "//a[@class='selectboxit-option-anchor' and text()='Owned mortgaged']").click
+
+# MARITAL STATUS
+#  SELECT MARITAL STATUS
+element = @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id316SelectBoxItText')
+element.click
+@driver.find_element(:xpath, "//a[@class='selectboxit-option-anchor' and text()='Married']").click
+
+#Number of dependents
+element = @driver.find_element(:xpath, '//*[@id="idPageConsumer:idForm:j_id13:j_id319"]/fieldset/input')
+element.click
+element.send_keys :backspace
+element.send_keys('4')
+
+#signatory direct debit
+# wait_for_window($take_five)
+wait_for_element_by_id(@driver, "idPageConsumer:idForm:j_id13:checkbox1")
+@driver.find_element(:id, "idPageConsumer:idForm:j_id13:checkbox1").click
+
+
+###########
+# @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id272').click
+# @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id316SelectBoxItText').click
+# element = @driver.find_element(:css, '.selectboxit-option-last:nth-child(7) > .selectboxit-option-anchor')
+# @driver.action.move_to(element).click_and_hold.perform
+# element = @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id318')
+# @driver.action.move_to(element).release.perform
+################################################
+#############################
+@driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id461:j_id462:j_id465:0:idAddressMonth').click
+2.times {@driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id461:j_id462:j_id465:0:idAddressMonth').send_keys :backspace}
+@driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id461:j_id462:j_id465:0:idAddressMonth').send_keys('12')
+
+2.times {@driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id461:j_id462:j_id465:0:idAddressYear').send_keys :backspace}
+@driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id461:j_id462:j_id465:0:idAddressYear').send_keys('2014')
+############################################
+
+# Check to see if addresss field is already pre-populated
+
+# town
+element = @driver.find_element(:id, "idPageConsumer:idForm:j_id13:j_id461:j_id462:j_id465:0:county__c")
+county_text = element.attribute('value')
+puts "user exist #{@user_exists}  and county_text #{county_text}"
+puts "user exist #{@user_exists} "
+if @user_exists == false && county_text.to_s.empty?
+# Selecting Address
+puts "Selecting Address"
+
+wait_for_window($take_five)
+
+@driver.switch_to.window @driver.window_handles.last
+
+is_element_present(:id, "idPageConsumer:idForm:j_id13:j_id461:j_id462:j_id465:0:InvokeRapidSearchButtonId0")
+    @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id461:j_id462:j_id465:0:InvokeRapidSearchButtonId0').click
+    page_has_loaded(@driver)
+
+  #   @driver.switch_to.window @driver.window_handles.last
+
+
+  # element = @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id461:j_id462:j_id465:0:town__c')
+  # town_text = element.text
+  # puts " TOWN TEXT PRESENT? #{town_text}"
+
+    # wait_for_window($take_five)
+    wait_for_window(2000)
+    @driver.switch_to.frame(2)
+    @driver.switch_to.frame(0)
+    @driver.find_element(:id, 'ButtonSearch').click
+    @driver.find_element(:id, 'ButtonSearch').send_keys :enter
+    # binding.pry
+
+    wait_for_window($take_five)
+    # @driver.switch_to.frame('rapidSearch')
+    @driver.find_element(:id, 'searchText').send_keys("Nationwide")
+
+    wait_for_window($take_five)
+
+    @driver.find_element(:id, 'ButtonSearch').click
+    # @driver.find_element(:id, 'ButtonSearch').send_keys :enter
+
+
+    # @driver.switch_to.frame('results')
+    # # @driver.find_element(:css, 'tr:nth-child(2) div').click
+    # # @driver.find_element(:xpath, "//*[@id='picklist']/table/tbody/tr[5]/td[1]/a/div").click
+    # @driver.find_element(:xpath, "//*[@id='picklist']/table/tbody/tr/td[1]/a/div").click
+
+    wait_for_window($take_five)
+    # binding.pry
+    # @driver.switch_to.frame(2)
+    # @driver.switch_to.frame(0)
+    @driver.find_element(:id, 'Accept').click
+else
+  puts "frame doesn't exist"
+end
+    # switch_handles()
+    # wait_for_window($take_five)
+  @driver.switch_to.default_content
+  # @driver.find_element(:css, '#idPageConsumer\:idForm\:j_id13\:j_id461\:j_id462\:j_id465\:0\:j_id473 > button').click
+  # wait_for_window($take_five)
+
 
 #@driver.find_element(:css, '.address__c_to__c').click
 wait_for_window($take_five)
@@ -384,67 +691,227 @@ wait_for_window($take_five)
 @driver.find_element(:id, "idPageConsumer:idForm:j_id13:idmobilephonenumber").click
 @driver.find_element(:id, "idPageConsumer:idForm:j_id13:idmobilephonenumber").send_keys :clear
 @driver.find_element(:id, "idPageConsumer:idForm:j_id13:idmobilephonenumber").send_keys("07123456789")
+
+# Sometimes text exist, so check first before entering data
+is_element_present(:id, 'idPageConsumer:idForm:j_id13:idemail')
+box_present = @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:idemail').attribute('value')
+
+if box_present.to_s.empty? &&  @user_exists == false
+  @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:idemail').click
+  @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:idemail').send_keys :clear
+  @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:idemail').send_keys('lian.meehan7@autorama.co.uk')
+
+  # @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:idemail').send_keys('lian.meehan6@autorama.co.uk')
+  # @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:idemail').send_keys('lian.meehan5@autorama.co.uk')
+
+end
+
+# SAVE AND CONTINUE
 @driver.find_element(:css, '#idPageConsumer\:idForm\:j_id13\:j_id651 > button').click
 
 #########################################
 #      BANK ACCOUNT DETAILS  - New page #
 ##########################################
+# Agree
+  if !$user_exists
+      wait_and_click(:link_text, 'AGREE')
+      wait_until_element_appears(:xpath, "//*[@type='submit' and @value='AGREED' and @disabled='disabled']")
 
-wait_for_window($take_five)
-@driver.find_element(:link_text, 'AGREE').click
+  # wait_for_window($take_five)
+
+# binding.pry
+if is_element_present(:link_text, 'AGREE')
+  @driver.find_element(:link_text, 'AGREE').click
+  wait_until_element_appears(:xpath, "//*[@type='submit' and @value='AGREED' and @disabled='disabled']")
+end
 #click on next button
 
- if @driver.find_element(:css, '.walkme-custom-balloon-title').displayed?
-  @driver.find_element(:css, '.walkme-custom-balloon-title').click
-  @driver.find_element(:css, '.walkme-custom-balloon-button-text').click
- end
+wait_and_click(:css, '.walkme-custom-balloon-title')
 
-# Agree
-if wait_for_element_by_link(@driver, 'AGREE')
+# wait_for_window($take_five)
+
+#  if @driver.find_element(:css, '.walkme-custom-balloon-title').displayed?
+#   @driver.find_element(:css, '.walkme-custom-balloon-title').click
+#   @driver.find_element(:css, '.walkme-custom-balloon-button-text').click
+#  end
+# wait_and_click(:css, '.walkme-custom-balloon-title')
+wait_and_click(:css, '.walkme-custom-balloon-button-text')
+
+if is_element_present(:link_text, 'AGREE')
   @driver.find_element(:link_text, 'AGREE').click
-  # confirm
-  #@driver.find_element(:css, '#j_id0\:idfrm\:j_id8\:j_id312\:2\:j_id318 > a').click
+  wait_until_element_appears(:xpath, "//*[@type='submit' and @value='AGREED' and @disabled='disabled']")
+end
+
+@driver.execute_script('window.scrollTo(0,-500.333333492279053)')
+
+# confirm
+if is_element_present(:css, '#j_id0\:idfrm\:j_id8\:j_id312\:2\:j_id318 > a')
+  @driver.execute_script("$('.HideAllButtonnew').hide(); markQuestionAgree(2);progressStatus();")
+  # @driver.find_element(:css, '#j_id0\:idfrm\:j_id8\:j_id312\:2\:j_id318 > a').click
 else
-  puts "Additional AGREE not present"
+  puts "Cannot confirm element is present"
 end
 
 # save and continue
+
+wait_for_element_by_id(@driver, 'j_id0:idfrm:j_id8:j_id332')
+# onclick="A4J.AJAX.Submit('j_id0:idfrm',event,{'similarityGroupingId':'j_id0:idfrm:j_id8:j_id331','parameters':{'j_id0:idfrm:j_id8:j_id331':'j_id0:idfrm:j_id8:j_id331'} ,'status':'j_id0:actStatusId'} );return false;"
 @driver.find_element(:id, 'j_id0:idfrm:j_id8:j_id332').click
+wait_til_element_disappears(:id, 'j_id0:idfrm:j_id8:j_id332')
+
+page_has_loaded(@driver)
 
 ##########################################
 #      EMPLOYMENT DETAILS  - New page #
 ##########################################
-@driver.execute_script('window.scrollTo(0,5.333333492279053)')
-wait_for_window($take_five)
+@driver.execute_script('window.scrollTo(0,500.333333492279053)')
+#wait_for_window($take_five)
 #####
-
+# Confirm
 ####
-wait_for_element_by_id(@driver, 'j_id0:idfrm:j_id4:selectSelectBoxItText')
-@driver.find_element(:id, 'j_id0:idfrm:j_id4:selectSelectBoxItText').click
-wait_for_window($take_five)
 
-element = @driver.find_element(:css, ".selectboxit-focus > .selectboxit-option-anchor")
-@driver.action.move_to(element).click_and_hold.perform
-element = @driver.find_element(:id, 'j_id0:idfrm:j_id4:selectSelectBoxItText')
-@driver.action.move_to(element).release.perform
-@driver.find_element(:id, "j_id0:idfrm:j_id4:selectSelectBoxItContainer").click
-@driver.execute_script("window.scrollTo(0,508)")
+if is_element_present(:id, 'j_id0:idfrm:j_id4:selectSelectBoxItText')
+
+ # wait_and_click(:id, 'j_id0:idfrm:j_id4:selectSelectBoxItText')
+  # @driver.find_element(:id, 'j_id0:idfrm:j_id4:selectSelectBoxItText').click
 
 ###  FILLED IN EMPLOYMENT DETAILS#
-
 ###########
+# Occupation
+#else
+#wait_for_window($take_five)
+# element = @driver.find_element(:css, ".selectboxit-focus > .selectboxit-option-anchor")
+# @driver.action.move_to(element).click_and_hold.perform
+element = @driver.find_element(:id, 'j_id0:idfrm:j_id4:selectSelectBoxItText')
+element.click
+wait_and_click(:xpath, "//a[@class='selectboxit-option-anchor' and text()='Military']")
+# @driver.find_element(:xpath, "//a[@class='selectboxit-option-anchor' and text()='Military']").click
+end
 
+if is_element_present(:name, 'j_id0:idfrm:j_id4:j_id246')
+  element = @driver.find_element(:name, 'j_id0:idfrm:j_id4:j_id246')
+  profile_text = element.attribute('value')
+    puts "user exist #{@user_exists}  and profile_text #{profile_text}"
+    # @driver.find_element(:name, 'j_id0:idfrm:j_id4:j_id246').click
+    # @driver.find_element(:name, 'j_id0:idfrm:j_id4:j_id246').send_keys('Senior Customer Credit Specialist')
+
+elsif is_element_present(:xpath, "//*[@id='j_id0:idfrm:j_id4:j_id242']/fieldset/input")
+  element = @driver.find_element(:xpath, "//*[@id='j_id0:idfrm:j_id4:j_id242']/fieldset/input")
+  profile_text = element.attribute('value')
+    puts "user exist #{@user_exists}  and profile_text #{profile_text}"
+    # @driver.find_element(:xpath, "//*[@id='j_id0:idfrm:j_id4:j_id242']/fieldset/input").click
+    # @driver.find_element(:xpath, "//*[@id='j_id0:idfrm:j_id4:j_id242']/fieldset/input").send_keys('Senior Customer Credit Specialist')
+end
+
+if profile_text.to_s.empty?
+    element.click
+    element.send_keys('Senior Customer Credit Specialist')
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:j_id253').click
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:j_id253').send_keys('Autorama UK Ltd')
+
+    element = @driver.find_element(:id, "j_id0:idfrm:j_id4:county__c")
+    county_text = element.attribute('value')
+    puts "user exist #{@user_exists}  and county_text #{county_text}"
+    puts "user exist #{@user_exists} "
+
+  if county_text.to_s.empty?
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:postcode__c').click
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:postcode__c').send_keys('HP2 7DE')
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:house_name__c').click
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:house_name__c').send_keys('Vanarama')
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:street__c').click
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:street__c').send_keys('Marylands Avenue')
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:town__c').click
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:town__c').send_keys('Hemel Hempstead')
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:idPostCode').send_keys('hp2 7de')
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:county__c').click
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:county__c').send_keys('Hertfordshire')
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:country__c').click
+    @driver.find_element(:id, 'j_id0:idfrm:j_id4:country__c').send_keys('United Kingdom')
+  end
+end
+#end
+# Confirm
+# wait_for_window($take_five)
+
+# wait_for_element(:css, '#j_id0\:idfrm\:j_id8\:j_id312\:2\:j_id318 > a')
+
+if  is_element_present(:css, '#j_id0\:idfrm\:j_id8\:j_id312\:2\:j_id318 > a')
+  @driver.find_element(:css, '#j_id0\:idfrm\:j_id8\:j_id312\:2\:j_id318 > a').click
+  wait_until_disabled(:css, '#j_id0\:idfrm\:j_id8\:j_id312\:2\:j_id318 > a')
+end
+
+
+# Save and Continue
+# binding.pry
+
+# wait_for_window($take_five)
+
+if is_element_present(:id, 'j_id0:idfrm:j_id4:j_id332')
+  jscript_save_cont = "A4J.AJAX.Submit('j_id0:idfrm',event,{'similarityGroupingId':'j_id0:idfrm:j_id4:j_id332','oncomplete':function(request,event,data){Restyle_select_box(true);edqInitialize();},'parameters':{'j_id0:idfrm:j_id4:j_id332':'j_id0:idfrm:j_id4:j_id332'} ,'status':'j_id0:idfrm:actStatusId'} );return false;"
+  # wait_and_click(:id, 'j_id0:idfrm:j_id4:j_id332')
+  @driver.execute_script(jscript_save_cont)
+
+  wait_til_element_disappears(:css, '#j_id0\:idfrm\:j_id8\:j_id312\:2\:j_id318 > a')
+
+  # @driver.find_element(:id, 'j_id0:idfrm:j_id4:j_id332').click
+elsif is_element_present(:id, 'j_id0:idfrm:j_id8:j_id332')
+  # @driver.find_element(:id, 'j_id0:idfrm:j_id8:j_id332').click
+  wait_and_click(:id, 'j_id0:idfrm:j_id8:j_id332')
+  wait_til_element_disappears(:id, 'j_id0:idfrm:j_id8:j_id332')
+
+  #@driver.execute_script("4J.AJAX.Submit('j_id0:idfrm',event,{'similarityGroupingId':'j_id0:idfrm:j_id8:j_id332','parameters':{'j_id0:idfrm:j_id8:j_id332':'j_id0:idfrm:j_id8:j_id332'} ,'status':'j_id0:actStatusId'} );return false;")
+else
+  puts "Cannot Click on Save and Continue"
+end
+end
+# binding.pry
+page_has_loaded(@driver)
+
+wait_for_element(:id, "idIncExpensePage:idForm:j_id6:j_id244SelectBoxItText")
+
+# Save and Continue
+@driver.execute_script("window.scrollTo(0,500.3333282470703)")
+# Occupation
+if is_element_present(:id, 'j_id0:idfrm:j_id4:selectSelectBoxItText')
+  element = @driver.find_element(:id, 'j_id0:idfrm:j_id4:selectSelectBoxItText')
+  occupation_text = element.attribute('value')
+puts "user exist #{@user_exists}  and occupation_text #{occupation_text}"
+    if occupation_text.to_s.empty?
+      wait_til_element_is_enabled(:id, 'j_id0:idfrm:j_id4:selectSelectBoxItText')
+      element = @driver.find_element(:id, 'j_id0:idfrm:j_id4:selectSelectBoxItText')
+      element.click
+      wait_and_click(:xpath, "//a[@class='selectboxit-option-anchor' and text()='Military']")
+      # @driver.find_element(:xpath, "//a[@class='selectboxit-option-anchor' and text()='Military']").click
+    end
+
+
+if is_element_present(:id, 'j_id0:idfrm:j_id4:j_id332')
+  wait_and_click(:id, 'j_id0:idfrm:j_id4:j_id332')
+  # @driver.find_element(:id, 'j_id0:idfrm:j_id4:j_id332').click
+else is_element_present(:id, 'j_id0:idfrm:j_id8:j_id332')
+  # @driver.find_element(:id, 'j_id0:idfrm:j_id8:j_id332').click
+  wait_and_click(:id, 'j_id0:idfrm:j_id8:j_id332')
+end
+# @driver.action.move_to(element).release.perform
+# @driver.find_element(:id, "j_id0:idfrm:j_id4:selectSelectBoxItContainer").click
+end
 ##########################################
 #      INCOME & EXPENDITURE  - New page #
 ##########################################
 
+if is_element_present(:id, 'idIncExpensePage:idForm:j_id6:j_id244SelectBoxItText')
+  @driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:j_id244SelectBoxItText').click
+  wait_and_click(:xpath, "//a[@class='selectboxit-option-anchor' and text()='Household']")
+  # @driver.find_element(:xpath, "//a[@class='selectboxit-option-anchor' and text()='Household']").click
+end
+# element = @driver.find_element(:css, '.selectboxit-option-last > .selectboxit-option-anchor')
+# @driver.action.move_to(element).click_and_hold.perform
+# element = @driver.find_element(:css, '.cp_agree_contacts__c_monthly_income__c')
+# @driver.action.move_to(element).release.perform
+@driver.execute_script("window.scrollTo(0,508)")
 wait_for_window($take_five)
-@driver.find_element(:id, 'j_id0:idfrm:j_id4:j_id332').click
-@driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:j_id244SelectBoxItText').click
-element = @driver.find_element(:css, '.selectboxit-option-last > .selectboxit-option-anchor')
-@driver.action.move_to(element).click_and_hold.perform
-element = @driver.find_element(:css, '.cp_agree_contacts__c_monthly_income__c')
-@driver.action.move_to(element).release.perform
+is_element_present(:id, 'idIncExpensePage:idForm:j_id6:j_id237')
 @driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:j_id237').click
 @driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:idMonthlyIncome').click
 @driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:idMonthlyIncome').send_keys('2000')
@@ -466,8 +933,9 @@ element = @driver.find_element(:css, '.cp_agree_contacts__c_monthly_income__c')
 @driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:idTotalOther').send_keys('200')
 wait_and_click(:css, ".button--primary")
 # @driver.find_element(:css, '.button--primary').click
-wait_for_window($take_five)
-@driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:iddisposalinc').click
+is_element_present(:id, 'idIncExpensePage:idForm:j_id6:iddisposalinc')
+wait_and_click(:id, 'idIncExpensePage:idForm:j_id6:iddisposalinc')
+# @driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:iddisposalinc').click
 @driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:iddisposalinc').send_keys :clear
 @driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:iddisposalinc').send_keys('0')
 @driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:iddisposalinc').click
@@ -478,21 +946,23 @@ wait_for_window($take_five)
 ##########################################
 #     JOINT APPLICANT  - New page #
 ##########################################
-
+# binding.pry
 # Save Button
-
+page_has_loaded(@driver)
+is_element_present(:css, '#j_id0\:frm\:j_id2\:j_id231')
 @driver.find_element(:css, '#j_id0\:frm\:j_id2\:j_id231 > center > a.button.button--primary.push--top.push--left.disabledbutton').click
-
 ##########################################
 
 ##########################################
 #     Credit Proposal  - New page #
 ##########################################
 # Request funding #
+@driver.execute_script("window.scrollTo(0,708)")
 
 #  Enter Description
+wait_til_element_is_enabled(:css, '#IdPage\:j_id1\:j_id195\:IdPage\:IdForm\:wtable\:0\:description')
 @driver.find_element(:css, '#IdPage\:j_id1\:j_id195\:IdPage\:IdForm\:wtable\:0\:description').click
-@driver.find_element(:css, '#IdPage\:j_id1\:j_id195\:IdPage\:IdForm\:wtable\:0\:description').send_keys('Test Car Description')
+@driver.find_element(:css, '#IdPage\:j_id1\:j_id195\:IdPage\:IdForm\:wtable\:0\:description').send_keys('Test ')
 
 # MAXIMUM MONTHLY RENTAL
 @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:costMonthlyRental').click
@@ -516,77 +986,69 @@ wait_for_window($take_five)
 ################
 #Select all
 wait_for_window($take_five)
-@driver.find_element(:css, '#IdPage\:j_id1\:j_id195\:IdPage\:IdForm\:j_id394').click
+is_element_present(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:j_id394')
+wait_and_click(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:j_id394')
+# @driver.find_element(:css, '#IdPage\:j_id1\:j_id195\:IdPage\:IdForm\:j_id394').click
+
+wait_for_window($take_five)
 
 # Find and attach a quote
-wait_for_window($take_five)
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:test").click
-binding.pry
+is_element_present(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:test")
+wait_and_click(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:test")
+# @driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:test").click
 
+# # Total Cost Descending
+# @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:SearchTotalCostDescending').click
 quote_select(@driver, "Personal Contract Hire")
-# Total Cost Descending, By Id
-@driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:SearchTotalCostDescending').click
-@driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:SearchById').click
 
-# Search for the right type of qupte  - Personal Contract Hire
-@driver.find_element(:xpath => "//*[contains(text(), 'Personal Contract Hire')]").click
-# <div class="card-align-block card-list__fixed-text">Personal Contract Hire</div>
-# //*[@id="IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:IdQuotesBoxSectionOnly"]/div/div[7]/div[3]/div/div[1]
-# Select option
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:Idquotesbox8:0:j_id499").click
 
-# Select all quote
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:test").click
+######## Update text area with correct car description
+# Extract make of car
+wait_for_window($take_five)
+  car_make = @driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:descriptionModel").text
+  puts "got car_make value of #{car_make}"
+# Extract build and specify
+car_model = @driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:descriptionQuotes").text
+  puts "got car_model value of #{car_model}"
+
+# Paste into text description area
+
+@driver.find_element(:css, '#IdPage\:j_id1\:j_id195\:IdPage\:IdForm\:wtable\:0\:description').click
+@driver.find_element(:css, '#IdPage\:j_id1\:j_id195\:IdPage\:IdForm\:wtable\:0\:description').send_keys("#{car_make} #{car_model}")
+
+# # Total Cost Descending, By Id
+# @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:SearchTotalCostDescending').click
+# @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:SearchById').click
+
+# # Search for the right type of qupte  - Personal Contract Hire
+# @driver.find_element(:xpath => "//*[contains(text(), 'Personal Contract Hire')]").click
+# # <div class="card-align-block card-list__fixed-text">Personal Contract Hire</div>
+# # //*[@id="IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:IdQuotesBoxSectionOnly"]/div/div[7]/div[3]/div/div[1]
+# binding.pry
+# # Select option
+# @driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:Idquotesbox8:0:j_id499").click
+
+# # Select all quote
+# @driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:test").click
 
 # Generate PDF
+is_element_present(:css, '#IdPage\:j_id1\:j_id195\:IdPage\:IdForm\:GeneratePDFButton')
 @driver.find_element(:css, '#IdPage\:j_id1\:j_id195\:IdPage\:IdForm\:GeneratePDFButton').click
-@driver.switch_to.window(@driver.window_handles[2])
-@driver.current_url
-binding.pry
-#download_url()
-@driver.switch_to.window(@driver.window_handles[1])
+wait_for_window($take_five)
+
+# @driver.switch_to.window(@driver.window_handles[2])
+# wait_for_window($take_five)
+
+# @driver.current_url
+@driver.execute_script("window.scrollTo(0,-248)")
+  binding.pry
+# @driver.save_screenshot("testpdf.jpg")
+# # binding.pry
+# #download_url()
+# @driver.switch_to.window(@driver.window_handles[1])
 
 # Submit Proposal
-@driver.find_element(:css, '#IdPage\:j_id1\:j_id195\:IdPage\:IdForm\:j_id969 > a').click
+# @driver.find_element(:css, '#IdPage\:j_id1\:j_id195\:IdPage\:IdForm\:j_id969 > a').click
 
-
-
-@driver.find_element(:id, 'j_id0:frm:j_id2:j_id232').click
-@driver.find_element(:css, '.button--primary').click
-@driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:Reason_ProposalSelectBoxItText').click
-@driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:IdMainPanel').click
-element = @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:description')
-@driver.action.move_to(element).click_and_hold.perform
-element = @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:description')
-@driver.action.move_to(element).perform
-element = @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:description')
-@driver.action.move_to(element).release.perform
-@driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:description').click
-@driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:description').send_keys('Ford Focus 1.8 S')
-element = @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:FINDAttachQuoteMain')
-@driver.action.move_to(element).click_and_hold.perform
-element = @driver.find_element(:css, '#IdPage\\3Aj_id1\\3Aj_id195\\3AIdPage\\3AIdForm\\3A actStatusId\\.start > #el_loading')
-@driver.action.move_to(element).release.perform
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm").click
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:FINDAttachQuoteMain").click
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:j_id528").click
-@driver.switch_to.window(@vars["root"])
-expect(@driver.switch_to.alert.text).to eq("This session will expire in five minutes. To remain connected and to prevent possible data loss, please validate this window.")
-@driver.switch_to.window(@vars["win7761"])
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:description").send_keys("Renault CLIO HATCHBACK 0.9 TCE 90 GT Line 5dr")
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:j_id527").click
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:costMonthlyRental").send_keys("250")
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm").click
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:costCapitalCost").send_keys("11500")
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm").click
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:FINDAttachQuoteMain").click
-@driver.find_element(:css, ".card-row:nth-child(3) > .tab-one-fifth:nth-child(5) .small").click
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:Idquotesbox8:4:j_id499").click
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:j_id516:IdNextPreviousNEXT").click
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:j_id516:IdNextPreviousNEXT").click
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:j_id516:IdNextPreviousNEXT").click
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:j_id516:IdNextPreviousNEXT").click
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:j_id516:IdNextPreviousNEXT").click
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:j_id516:IdNextPreviousNEXT").click
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:j_id516:IdNextPreviousNEXT").click
-@driver.find_element(:id, "IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:j_id516:IdNextPreviousNEXT").click
+# Confirm submission sucess
+#@driver.find_element(:css, '#IdPage\:j_id1\:j_id195\:IdPage\:IdForm\:j_id281 > a').click

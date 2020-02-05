@@ -61,34 +61,42 @@ describe 'Nemo' do
     @driver.find_element(:id, 'j_id0:form:j_id5:idACode7').send_keys('0')
     @driver.find_element(:id, 'j_id0:form:j_id5:idACode8').send_keys('1')
     element = @driver.find_element(:css, '.button')
-    @driver.action.move_to_element(element).click_and_hold.perform
+    @driver.action.move_to(element).click_and_hold.perform
     element = @driver.find_element(:css, '.button')
-    @driver.action.move_to_element(element).perform
+    @driver.action.move_to(element).perform
     element = @driver.find_element(:css, '.button')
-    @driver.action.move_to_element(element).release.perform
+    @driver.action.move_to(element).release.perform
     @driver.find_element(:css, '.button').click
     @driver.execute_script("window.scrollTo(0,1248)")
     @driver.find_element(:css, 'h2 > .textalign--center').click
     expect(@driver.find_element(:css, 'h2 > .textalign--center').text).to eq('We couldn’t find an existing customer.')
+    # CUSTOMER DETAILS > Customer Identity
+    #  SELECT the TITLE
     @driver.find_element(:css, '.button:nth-child(2)').click
     @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id279SelectBoxItText').click
     element = @driver.find_element(:css, '.selectboxit-focus > .selectboxit-option-anchor')
-    @driver.action.move_to_element(element).click_and_hold.perform
+    @driver.action.move_to(element).click_and_hold.perform
     element = @driver.find_element(:css, 'h3:nth-child(2)')
-    @driver.action.move_to_element(element).release.perform
+    @driver.action.move_to(element).release.perform
+
+    #  SELECT MARITAL STATUS
     @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id272').click
     @driver.find_element(:css, '.walkme-custom-balloon-button-text').click
     @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id310SelectBoxItText').click
     element = @driver.find_element(:css, '#idPageConsumer\\3AidForm\\3Aj_id13\\3Aj_id310SelectBoxItOptions > .selectboxit-focus > .selectboxit-option-anchor')
-    @driver.action.move_to_element(element).click_and_hold.perform
+    @driver.action.move_to(element).click_and_hold.perform
     element = @driver.find_element(:css, '.checkbox-label')
-    @driver.action.move_to_element(element).release.perform
-    @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id272').click
+    @driver.action.move_to(element).release.perform
+
+    #  SELECT MARITAL STATUS
+     @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id272').click
     @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id316SelectBoxItText').click
     element = @driver.find_element(:css, '.selectboxit-option-last:nth-child(7) > .selectboxit-option-anchor')
-    @driver.action.move_to_element(element).click_and_hold.perform
+    @driver.action.move_to(element).click_and_hold.perform
     element = @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id318')
-    @driver.action.move_to_element(element).release.perform
+    @driver.action.move_to(element).release.perform
+
+    # SELECT ADDRESS
     @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:j_id272').click
     @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:checkbox1').click
     @driver.find_element(:id, 'idPageConsumer:idForm:j_id13:checkbox1').click
@@ -140,9 +148,9 @@ describe 'Nemo' do
     @driver.execute_script("window.scrollTo(0,5.333333492279053)")
     @driver.find_element(:id, 'j_id0:idfrm:j_id4:selectSelectBoxItText').click
     element = @driver.find_element(:css, '.selectboxit-focus > .selectboxit-option-anchor')
-    @driver.action.move_to_element(element).click_and_hold.perform
+    @driver.action.move_to(element).click_and_hold.perform
     element = @driver.find_element(:id, 'j_id0:idfrm:j_id4:selectSelectBoxItText')
-    @driver.action.move_to_element(element).release.perform
+    @driver.action.move_to(element).release.perform
     @driver.find_element(:id, 'j_id0:idfrm:j_id4:selectSelectBoxItContainer').click
     @driver.execute_script("window.scrollTo(0,508)")
     @driver.find_element(:name, 'j_id0:idfrm:j_id4:j_id246').click
@@ -170,9 +178,9 @@ describe 'Nemo' do
     @driver.find_element(:id, 'j_id0:idfrm:j_id4:j_id332').click
     @driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:j_id244SelectBoxItText').click
     element = @driver.find_element(:css, '.selectboxit-option-last > .selectboxit-option-anchor')
-    @driver.action.move_to_element(element).click_and_hold.perform
+    @driver.action.move_to(element).click_and_hold.perform
     element = @driver.find_element(:css, '.cp_agree_contacts__c_monthly_income__c')
-    @driver.action.move_to_element(element).release.perform
+    @driver.action.move_to(element).release.perform
     @driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:j_id237').click
     @driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:idMonthlyIncome').click
     @driver.find_element(:id, 'idIncExpensePage:idForm:j_id6:idMonthlyIncome').send_keys('2000')
@@ -201,17 +209,17 @@ describe 'Nemo' do
     @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:Reason_ProposalSelectBoxItText').click
     @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:IdMainPanel').click
     element = @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:description')
-    @driver.action.move_to_element(element).click_and_hold.perform
+    @driver.action.move_to(element).click_and_hold.perform
     element = @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:description')
-    @driver.action.move_to_element(element).perform
+    @driver.action.move_to(element).perform
     element = @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:description')
-    @driver.action.move_to_element(element).release.perform
+    @driver.action.move_to(element).release.perform
     @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:description').click
     @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:description').send_keys('Ford Focus 1.8 S')
     element = @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:FINDAttachQuoteMain')
-    @driver.action.move_to_element(element).click_and_hold.perform
+    @driver.action.move_to(element).click_and_hold.perform
     element = @driver.find_element(:css, '#IdPage\\3Aj_id1\\3Aj_id195\\3AIdPage\\3AIdForm\\3A actStatusId\\.start > #el_loading')
-    @driver.action.move_to_element(element).release.perform
+    @driver.action.move_to(element).release.perform
     @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm').click
     @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:FINDAttachQuoteMain').click
     @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:j_id528').click

@@ -72,11 +72,12 @@ end
 def wait_for_element_by_id(driver, element) #timeout = 2
   wait = Selenium::WebDriver::Wait.new(:timeout => 30) # seconds
   begin
-    wait.until { driver.find_element(:id => element) }
-  ensure
+    wait.until { driver.find_element(:id,  element) }
+  rescue
     #driver.quit
   end
 end
+
 
 def wait_for_element_by_link(driver, element) #timeout = 2
   wait = Selenium::WebDriver::Wait.new(:timeout => 30) # seconds
@@ -94,9 +95,9 @@ def wait_for_element_to_be_enabled_by_link(driver, element) #timeout = 2
   end
 end
 
-def wait_until_element_appears(driver, locator, name)
+def wait_until_element_appears(locator, name)
   wait = Selenium::WebDriver::Wait.new(:timeout => 30) # seconds
-  wait.until { driver.find_element(locator, name).displayed? }
+  wait.until { @driver.find_element(locator, name).displayed? }
 end
 
 def wait_until_element_appears_by_id(driver, element) #timeout = 2
@@ -457,3 +458,24 @@ end
     @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:j_id516:IdNextPreviousNEXT').click
     @driver.find_element(:id, 'IdPage:j_id1:j_id195:IdPage:IdForm:wtable:0:j_id516:IdNextPreviousNEXT').click
 
+    ##########################################################
+    Test Code
+    
+    require "selenium-webdriver"
+    driver = Selenium::WebDriver.for :firefox
+    driver.manage.timeouts.implicit_wait = 10
+    driver.get "https://example.com"
+    country_select = driver.find_element(:id=> "address_country")
+    options = country_select.find_elements(:tag_name=>"option")
+    options.each do |el|
+        if (el.attributes("value") == "USA") 
+            el.click()
+            break
+        end
+    end
+
+
+dropDownMenu = @driver.find_element(:class, 'dropDownMenu')
+option = Selenium::WebDriver::Support::Select.new(dropDownMenu)
+option.select_by(:text, 'Billing to Shipping')
+option.select_by(:value, 'Billing to Shipping')
